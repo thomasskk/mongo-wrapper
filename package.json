@@ -1,0 +1,30 @@
+{
+  "name": "mongo-wrapper",
+  "packageManager": "yarn@4.0.0-rc.5",
+  "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
+  "prettier": {
+    "arrowParens": "always",
+    "jsxSingleQuote": true,
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 80
+  },
+  "dependencies": {
+    "mongodb": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.35",
+    "@typescript-eslint/eslint-plugin": "^5.25.0",
+    "@typescript-eslint/parser": "^5.25.0",
+    "@yarnpkg/sdks": "^3.0.0-rc.5",
+    "autoprefixer": "^10.4.7",
+    "eslint": "^8.16.0",
+    "typescript": "rc",
+    "vite": "^2.9.9",
+    "vitest": "^0.12.9"
+  }
+}
