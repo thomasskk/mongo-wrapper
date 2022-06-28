@@ -39,9 +39,7 @@ type ProjectionNever = { projection?: never }
 
 type Projection<T> = ProjectionPick<T> | ProjectionOmit<T> | ProjectionNever
 
-type ProjectionReturn<T, P extends Projection<T>> = P extends ProjectionNever
-  ? WithId<T>
-  : P extends ProjectionPick<T>
+type ProjectionReturn<T, P extends Projection<T>> = P extends ProjectionPick<T>
   ? Pick<T, keyof P['projection']>
   : P extends ProjectionOmit<T>
   ? Omit<T, keyof P['projection']>
