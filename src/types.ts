@@ -33,15 +33,29 @@ type SortParams = {
   limit: number
 }
 
+type ProjectionPick<T> = { projection: { [K in keyof WithId<T>]?: 1 } }
+type ProjectionOmit<T> = { projection: { [K in keyof WithId<T>]?: 0 } }
+type ProjectionNever = { projection?: never }
+
+type Projection<T> = ProjectionPick<T> | ProjectionOmit<T> | ProjectionNever
+
+type ProjectionReturn<T, P extends Projection<T>> = P extends ProjectionNever
+  ? WithId<T>
+  : P extends ProjectionPick<T>
+  ? Pick<T, keyof P['projection']>
+  : P extends ProjectionOmit<T>
+  ? Omit<T, keyof P['projection']>
+  : WithId<T>
+
 export interface Model<T> {
   new (): any
   collection: string
   store: WithId<T>[]
 
-  findOne: (
+  findOne: <P extends Projection<T>>(
     filter: Filter<T>,
-    options?: FindOptions<T>
-  ) => Promise<WithId<T> | null>
+    options?: FindOptions<T> & P
+  ) => Promise<ProjectionReturn<T, P> | null>
 
   findOneOrFail: (
     filter: Filter<T>,
