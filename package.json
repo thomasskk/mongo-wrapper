@@ -1,7 +1,5 @@
 {
   "name": "mongo-wrapper",
-  "packageManager": "yarn@4.0.0-rc.5",
-  "type": "module",
   "scripts": {
     "test": "vitest"
   },
@@ -17,14 +15,14 @@
     "mongodb": "^4.6.0"
   },
   "devDependencies": {
-    "@types/node": "^17.0.35",
+    "@types/node": "^18.7.13",
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "@typescript-eslint/parser": "^5.25.0",
     "@yarnpkg/sdks": "^3.0.0-rc.5",
     "autoprefixer": "^10.4.7",
     "eslint": "^8.16.0",
-    "typescript": "rc",
-    "vite": "^2.9.9",
-    "vitest": "^0.12.9"
+    "typescript": "^4.8.2",
+    "vite": "^3.0.9",
+    "vitest": "^0.22.1"
   }
 }

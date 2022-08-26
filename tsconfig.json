@@ -1,14 +1,13 @@
 {
   "compilerOptions": {
-    "module": "nodenext",
-    "target": "esnext",
-    "moduleResolution": "nodenext",
-    "checkJs": false,
-    "composite": true,
+    "target": "ESNext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "jsx": "react",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "strict": true,
-    "noUnusedLocals": false,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "noImplicitAny": false
   },
   "include": ["src", "__test__"]
 }

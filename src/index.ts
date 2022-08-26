@@ -1,73 +1,87 @@
 import {
   CreateIndexesOptions,
   Db,
+  Document,
   IndexSpecification,
   MongoClient,
   MongoClientOptions,
 } from 'mongodb'
-import { abstract, build } from './model.js'
-import type { Model } from './types.js'
-export type { Model }
+import { Model } from './model'
+export { Model }
 
 type Indexes = {
   key: IndexSpecification
   options?: CreateIndexesOptions
 }[]
 
-class MongoInstance {
-  models = new Map<
-    string,
-    {
-      model: any
-      indexes: Indexes
-    }
-  >()
-  db?: Db
-  client?: MongoClient
+export const MongoInstance = () => {
+  let db: Db | undefined
+  let client: MongoClient | undefined
 
-  async init(uri: string, dbName: string, options?: MongoClientOptions) {
-    const mongoClient = new MongoClient(uri, {
-      ignoreUndefined: true,
-    })
-
-    await mongoClient.connect()
-    const db = mongoClient.db(dbName)
-
-    this.db = db
-    this.client = mongoClient
-
-    const indexPromises: Promise<string>[] = []
-
-    for (const [collection, { indexes, model }] of this.models) {
-      build(model, collection, db)
-
-      for (const index of indexes) {
-        indexPromises.push(
-          db.collection(collection).createIndex(index.key, index.options || {})
-        )
+  return {
+    db,
+    client,
+    models: new Map<
+      string,
+      {
+        model: ReturnType<typeof Model>
+        indexes: Indexes
       }
-    }
+    >(),
 
-    await Promise.all(indexPromises)
-  }
+    async init({
+      uri,
+      dbName,
+      options,
+    }: {
+      uri: string
+      dbName: string
+      options?: MongoClientOptions
+    }) {
+      this.client = new MongoClient(uri, options)
 
-  model<T>(
-    collection: string,
-    options: {
-      indexes?: Indexes
-    } = {}
-  ) {
-    const { indexes = [] } = options
-    const model = abstract()
+      await this.client.connect()
 
-    this.models.set(collection, { model, indexes })
+      this.db = this.client.db(dbName)
 
-    return model as unknown as Model<T>
-  }
+      const indexPromises: Promise<string>[] = []
 
-  async close() {
-    await this.client?.close()
+      for (const [collection, { indexes, model }] of this.models) {
+        model.collection = this.db.collection(collection)
+        for (const index of indexes) {
+          indexPromises.push(
+            this.db
+              .collection(collection)
+              .createIndex(index.key, index.options || {})
+          )
+        }
+      }
+
+      await Promise.all(indexPromises)
+    },
+
+    model<T extends Document>(
+      collectionName: string,
+      {
+        indexes = [],
+      }: {
+        indexes?: Indexes
+      } = {}
+    ) {
+      const model = Model<T>({
+        collectionName,
+        collection: {} as any,
+      })
+
+      this.models.set(collectionName, { indexes, model: model as any })
+
+      return model
+    },
+
+    async close() {
+      await this.client?.close()
+    },
   }
 }
 
-export const mongoInstance = new MongoInstance()
+export const mongoInstance = MongoInstance()
