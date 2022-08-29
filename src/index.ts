@@ -1,4 +1,5 @@
 import {
+  Collection,
   CreateIndexesOptions,
   Db,
   Document,
@@ -24,7 +25,9 @@ export const MongoInstance = () => {
     models: new Map<
       string,
       {
-        model: ReturnType<typeof Model>
+        collection: {
+          value: Collection<any>
+        }
         indexes: Indexes
       }
     >(),
@@ -46,12 +49,12 @@ export const MongoInstance = () => {
 
       const indexPromises: Promise<string>[] = []
 
-      for (const [collection, { indexes, model }] of this.models) {
-        model.collection = this.db.collection(collection)
+      for (const [collectionName, { indexes, collection }] of this.models) {
+        collection.value = this.db.collection(collectionName)
         for (const index of indexes) {
           indexPromises.push(
             this.db
-              .collection(collection)
+              .collection(collectionName)
               .createIndex(index.key, index.options || {})
           )
         }
@@ -73,7 +76,7 @@ export const MongoInstance = () => {
         collection: {} as any,
       })
 
-      this.models.set(collectionName, { indexes, model: model as any })
+      this.models.set(collectionName, { indexes, collection: model.collection })
 
       return model
     },

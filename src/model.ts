@@ -22,6 +22,7 @@ import {
   WithId,
   WithoutId,
 } from 'mongodb'
+
 import { ExactlyOne, FindOptions, FindOptionsReturn, SortParams } from './types'
 
 export const Model = <T extends Document>({
@@ -35,13 +36,12 @@ export const Model = <T extends Document>({
 
   return {
     collectionName,
-    collection,
-
+    collection: { value: collection },
     findOne<F extends FindOptions<T> = undefined>(
       filter: Filter<T>,
       options?: F
     ): Promise<FindOptionsReturn<T, F> | null> {
-      return this.collection.findOne(filter, options)
+      return this.collection.value.findOne(filter, options)
     },
 
     async findOneOrFail<F extends FindOptions<T> = undefined>(
@@ -50,7 +50,9 @@ export const Model = <T extends Document>({
     ): Promise<FindOptionsReturn<T, F>> {
       const data = await this.findOne(filter, options)
       if (!data) {
-        throw new Error(`Find failed for ${JSON.stringify(filter)} on ${this.collectionName}`)
+        throw new Error(
+          `Find failed for ${JSON.stringify(filter)} on ${this.collectionName}`
+        )
       }
       return data
     },
@@ -59,7 +61,7 @@ export const Model = <T extends Document>({
       filter: Filter<T>,
       options?: FindOptions<T>
     ): Promise<boolean> {
-      const result = await this.collection.findOne(filter, options)
+      const result = await this.collection.value.findOne(filter, options)
       return !!result
     },
 
@@ -84,8 +86,8 @@ export const Model = <T extends Document>({
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
       return options
-        ? this.collection.findOneAndUpdate(filter, update, options)
-        : this.collection.findOneAndUpdate(filter, update)
+        ? this.collection.value.findOneAndUpdate(filter, update, options)
+        : this.collection.value.findOneAndUpdate(filter, update)
     },
 
     async insertOne(
@@ -93,8 +95,8 @@ export const Model = <T extends Document>({
       options?: InsertOneOptions
     ): Promise<InsertOneResult<T>> {
       return options
-        ? this.collection.insertOne(doc, options)
-        : this.collection.insertOne(doc)
+        ? this.collection.value.insertOne(doc, options)
+        : this.collection.value.insertOne(doc)
     },
 
     async findOneAndReplace(
@@ -103,8 +105,8 @@ export const Model = <T extends Document>({
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
       return options
-        ? this.collection.findOneAndReplace(filter, replacement, options)
-        : this.collection.findOneAndReplace(filter, replacement)
+        ? this.collection.value.findOneAndReplace(filter, replacement, options)
+        : this.collection.value.findOneAndReplace(filter, replacement)
     },
 
     async findOneAndDelete(
@@ -112,27 +114,26 @@ export const Model = <T extends Document>({
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
       return options
-        ? this.collection.findOneAndDelete(filter, options)
-        : this.collection.findOneAndDelete(filter)
+        ? this.collection.value.findOneAndDelete(filter, options)
+        : this.collection.value.findOneAndDelete(filter)
     },
 
     find<F extends FindOptions<T> = undefined>(
       filter: Filter<T>,
       options?: F
     ): FindCursor<FindOptionsReturn<T, F>> {
-      return this.collection.find(filter, options) as any
+      return this.collection.value.find(filter, options) as any
     },
 
     async findSortAndPaginate<F extends FindOptions<T> = undefined>(
       { filter = {}, param, order, ...optionsParam }: SortParams<T>,
-      options?: F,
+      options?: F
     ): Promise<{
       result: FindOptionsReturn<T, F>[]
       count: number
     }> {
       const sort = { [param]: order }
       const { skip = 1 } = optionsParam
-
 
       const resultQuery = this.find(filter, options)
         .limit(optionsParam.limit)
@@ -156,8 +157,8 @@ export const Model = <T extends Document>({
       options?: UpdateOptions
     ): Promise<UpdateResult> {
       return options
-        ? this.collection.updateOne(filter, update, options)
-        : this.collection.updateOne(filter, update)
+        ? this.collection.value.updateOne(filter, update, options)
+        : this.collection.value.updateOne(filter, update)
     },
 
     async updateMany(
@@ -166,8 +167,8 @@ export const Model = <T extends Document>({
       options?: UpdateOptions
     ): Promise<Document | UpdateResult> {
       return options
-        ? this.collection.updateMany(filter, update, options)
-        : this.collection.updateMany(filter, update)
+        ? this.collection.value.updateMany(filter, update, options)
+        : this.collection.value.updateMany(filter, update)
     },
 
     async deleteOne(
@@ -175,8 +176,8 @@ export const Model = <T extends Document>({
       options?: DeleteOptions
     ): Promise<DeleteResult> {
       return options
-        ? this.collection.deleteOne(filter, options)
-        : this.collection.deleteOne(filter)
+        ? this.collection.value.deleteOne(filter, options)
+        : this.collection.value.deleteOne(filter)
     },
 
     async deleteMany(
@@ -184,8 +185,8 @@ export const Model = <T extends Document>({
       options?: DeleteOptions
     ): Promise<DeleteResult> {
       return options
-        ? this.collection.deleteMany(filter, options)
-        : this.collection.deleteMany(filter)
+        ? this.collection.value.deleteMany(filter, options)
+        : this.collection.value.deleteMany(filter)
     },
 
     async count(
@@ -193,15 +194,15 @@ export const Model = <T extends Document>({
       options?: CountDocumentsOptions
     ): Promise<number> {
       return options
-        ? this.collection.countDocuments(filter, options)
-        : this.collection.countDocuments(filter)
+        ? this.collection.value.countDocuments(filter, options)
+        : this.collection.value.countDocuments(filter)
     },
 
     aggregate(
       pipeline?: { [key: string]: any }[],
       options?: AggregateOptions
     ): AggregationCursor<T> {
-      return this.collection.aggregate(pipeline, options)
+      return this.collection.value.aggregate(pipeline, options)
     },
 
     async insertMany(
@@ -209,9 +210,8 @@ export const Model = <T extends Document>({
       options?: BulkWriteOptions
     ): Promise<InsertManyResult<T>> {
       return options
-        ? this.collection.insertMany(docs, options)
-        : this.collection.insertMany(docs)
+        ? this.collection.value.insertMany(docs, options)
+        : this.collection.value.insertMany(docs)
     },
   }
-}
 }
