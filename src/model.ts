@@ -10,208 +10,131 @@ import {
   Filter,
   FindCursor,
   FindOneAndUpdateOptions,
+  FindOptions,
   InsertManyResult,
   InsertOneOptions,
   InsertOneResult,
   ModifyResult,
   OptionalUnlessRequiredId,
-  Sort,
   UpdateFilter,
   UpdateOptions,
   UpdateResult,
-  WithId,
   WithoutId,
 } from 'mongodb'
 
-import { ExactlyOne, FindOptions, FindOptionsReturn, SortParams } from './types'
+import { Projection, WithProjectionRes } from './types.js'
 
-export const Model = <T extends Document>({
+export const model = <T extends Document>({
   collection,
   collectionName,
 }: {
   collection: Collection<T>
   collectionName: string
 }) => {
-  const store: WithId<T>[] = []
-
   return {
     collectionName,
-    collection: { value: collection },
-    findOne<F extends FindOptions<T> = undefined>(
+    findOne<F extends FindOptions<T> & Projection<T>>(
       filter: Filter<T>,
       options?: F
-    ): Promise<FindOptionsReturn<T, F> | null> {
-      return this.collection.value.findOne(filter, options)
-    },
-
-    async findOneOrFail<F extends FindOptions<T> = undefined>(
-      filter: Filter<T>,
-      options?: F
-    ): Promise<FindOptionsReturn<T, F>> {
-      const data = await this.findOne(filter, options)
-      if (!data) {
-        throw new Error(
-          `Find failed for ${JSON.stringify(filter)} on ${this.collectionName}`
-        )
-      }
-      return data
+    ): Promise<WithProjectionRes<T, F> | null> {
+      return collection.findOne(filter, options)
     },
 
     async exists(
       filter: Filter<T>,
       options?: FindOptions<T>
     ): Promise<boolean> {
-      const result = await this.collection.value.findOne(filter, options)
+      const result = await collection.findOne(filter, options)
       return !!result
     },
 
-    async findOneWithCache(field: ExactlyOne<T>): Promise<WithId<T>> {
-      const key = Object.keys(field)[0]
-      const value = field[key]
-
-      const storeData = store.find((data) => data[key] === value)
-
-      if (storeData) {
-        return storeData
-      }
-
-      const data = await this.findOneOrFail(field)
-      store.push(data)
-      return data
-    },
-
-    async findOneAndUpdate(
+    findOneAndUpdate(
       filter: Filter<T>,
       update: UpdateFilter<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return options
-        ? this.collection.value.findOneAndUpdate(filter, update, options)
-        : this.collection.value.findOneAndUpdate(filter, update)
+      return collection.findOneAndUpdate(filter, update, options ?? {})
     },
 
-    async insertOne(
+    insertOne(
       doc: OptionalUnlessRequiredId<T>,
       options?: InsertOneOptions
     ): Promise<InsertOneResult<T>> {
-      return options
-        ? this.collection.value.insertOne(doc, options)
-        : this.collection.value.insertOne(doc)
+      return collection.insertOne(doc, options ?? {})
     },
 
-    async findOneAndReplace(
+    findOneAndReplace(
       filter: Filter<T>,
       replacement: WithoutId<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return options
-        ? this.collection.value.findOneAndReplace(filter, replacement, options)
-        : this.collection.value.findOneAndReplace(filter, replacement)
+      return collection.findOneAndReplace(filter, replacement, options ?? {})
     },
 
-    async findOneAndDelete(
+    findOneAndDelete(
       filter: Filter<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return options
-        ? this.collection.value.findOneAndDelete(filter, options)
-        : this.collection.value.findOneAndDelete(filter)
+      return collection.findOneAndDelete(filter, options ?? {})
     },
 
-    find<F extends FindOptions<T> = undefined>(
+    find<F extends FindOptions<T> & Projection<T>>(
       filter: Filter<T>,
       options?: F
-    ): FindCursor<FindOptionsReturn<T, F>> {
-      return this.collection.value.find(filter, options) as any
+    ): FindCursor<WithProjectionRes<T, F>> {
+      return collection.find(filter, options)
     },
 
-    async findSortAndPaginate<F extends FindOptions<T> = undefined>(
-      { filter = {}, param, order, ...optionsParam }: SortParams<T>,
-      options?: F
-    ): Promise<{
-      result: FindOptionsReturn<T, F>[]
-      count: number
-    }> {
-      const sort = { [param]: order }
-      const { skip = 1 } = optionsParam
-
-      const resultQuery = this.find(filter, options)
-        .limit(optionsParam.limit)
-        .skip((skip - 1) * optionsParam.limit)
-        .sort(sort as Sort)
-
-      const [result, count] = await Promise.all([
-        resultQuery.toArray(),
-        this.count(filter),
-      ])
-
-      return {
-        result,
-        count,
-      }
-    },
-
-    async updateOne(
+    updateOne(
       filter: Filter<T>,
       update: UpdateFilter<T>,
       options?: UpdateOptions
     ): Promise<UpdateResult> {
-      return options
-        ? this.collection.value.updateOne(filter, update, options)
-        : this.collection.value.updateOne(filter, update)
+      return collection.updateOne(filter, update, options ?? {})
     },
 
-    async updateMany(
+    updateMany(
       filter: Filter<T>,
       update: UpdateFilter<T>,
       options?: UpdateOptions
     ): Promise<Document | UpdateResult> {
-      return options
-        ? this.collection.value.updateMany(filter, update, options)
-        : this.collection.value.updateMany(filter, update)
+      return collection.updateMany(filter, update, options ?? {})
     },
 
-    async deleteOne(
+    deleteOne(
       filter: Filter<T>,
       options?: DeleteOptions
     ): Promise<DeleteResult> {
-      return options
-        ? this.collection.value.deleteOne(filter, options)
-        : this.collection.value.deleteOne(filter)
+      return collection.deleteOne(filter, options ?? {})
     },
 
-    async deleteMany(
+    deleteMany(
       filter: Filter<T>,
       options?: DeleteOptions
     ): Promise<DeleteResult> {
-      return options
-        ? this.collection.value.deleteMany(filter, options)
-        : this.collection.value.deleteMany(filter)
+      return collection.deleteMany(filter, options ?? {})
     },
 
-    async count(
-      filter: Filter<T>,
-      options?: CountDocumentsOptions
-    ): Promise<number> {
-      return options
-        ? this.collection.value.countDocuments(filter, options)
-        : this.collection.value.countDocuments(filter)
+    count(filter: Filter<T>, options?: CountDocumentsOptions): Promise<number> {
+      return collection.countDocuments(filter, options ?? {})
     },
 
     aggregate(
       pipeline?: { [key: string]: any }[],
       options?: AggregateOptions
     ): AggregationCursor<T> {
-      return this.collection.value.aggregate(pipeline, options)
+      return collection.aggregate(pipeline, options)
     },
 
-    async insertMany(
+    insertMany(
       docs: OptionalUnlessRequiredId<T>[],
       options?: BulkWriteOptions
     ): Promise<InsertManyResult<T>> {
       return options
-        ? this.collection.value.insertMany(docs, options)
-        : this.collection.value.insertMany(docs)
+        ? collection.insertMany(docs, options)
+        : collection.insertMany(docs)
     },
   }
 }
+
+export type Model<T extends Document> = ReturnType<typeof model<T>>

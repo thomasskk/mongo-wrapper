@@ -7,84 +7,86 @@ import {
   MongoClient,
   MongoClientOptions,
 } from 'mongodb'
-import { Model } from './model'
-export { Model }
+import { Model, model } from './model.js'
+
+export { WithProjectionRes, Projection } from './types.js'
+
+export { Model, model }
 
 type Indexes = {
   key: IndexSpecification
   options?: CreateIndexesOptions
 }[]
 
-export const MongoInstance = () => {
-  let db: Db | undefined
-  let client: MongoClient | undefined
+class MongoInstance {
+  db: Db | undefined
 
-  return {
-    db,
-    client,
-    models: new Map<
-      string,
-      {
-        collection: {
-          value: Collection<any>
-        }
-        indexes: Indexes
-      }
-    >(),
+  client: MongoClient | undefined
 
-    async init({
-      uri,
-      dbName,
-      options,
-    }: {
-      uri: string
-      dbName: string
-      options?: MongoClientOptions
-    }) {
-      this.client = new MongoClient(uri, options)
+  models = new Map<
+    string,
+    {
+      collection: Collection
+      indexes: Indexes
+    }
+  >()
 
-      await this.client.connect()
+  async connect({
+    uri,
+    options,
+  }: {
+    uri: string
+    options?: MongoClientOptions
+  }) {
+    const client = new MongoClient(uri, options)
 
-      this.db = this.client.db(dbName)
+    client.on('connectionReady', () => {
+      console.log(`Connected to mongoDB`)
+    })
 
-      const indexPromises: Promise<string>[] = []
+    await client.connect()
 
-      for (const [collectionName, { indexes, collection }] of this.models) {
-        collection.value = this.db.collection(collectionName)
-        for (const index of indexes) {
-          indexPromises.push(
-            this.db
-              .collection(collectionName)
-              .createIndex(index.key, index.options || {})
+    await Promise.all(
+      Array.from(this.models).map(([collectionName, data]) => {
+        const collection = client.db().collection(collectionName)
+        Object.assign(this.models.get(collectionName)!, collection)
+        return Promise.all(
+          data.indexes.map((index) =>
+            collection.createIndex(index.key, index.options ?? {})
           )
-        }
-      }
-
-      await Promise.all(indexPromises)
-    },
-
-    model<T extends Document>(
-      collectionName: string,
-      {
-        indexes = [],
-      }: {
-        indexes?: Indexes
-      } = {}
-    ) {
-      const model = Model<T>({
-        collectionName,
-        collection: {} as any,
+        )
       })
+    )
 
-      this.models.set(collectionName, { indexes, collection: model.collection })
+    this.client = client
+    this.db = client.db()
+  }
 
-      return model
-    },
+  async disconnect() {
+    await this.client?.close()
+  }
 
-    async close() {
-      await this.client?.close()
-    },
+  createModel<T extends Document>(
+    collectionName: string,
+    {
+      indexes = [],
+    }: {
+      indexes?: Indexes
+    } = {}
+  ): Model<T> {
+    const collection: any = {}
+
+    this.models.set(collectionName, { indexes, collection })
+
+    return model<T>({
+      collectionName,
+      collection,
+    })
+  }
+
+  async close() {
+    await this.client?.close()
   }
 }
 
-export const mongoInstance = MongoInstance()
+export const mongoInstance = new MongoInstance()

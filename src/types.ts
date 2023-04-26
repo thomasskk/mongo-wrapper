@@ -1,32 +1,23 @@
-import { Document, Filter, FindOptions as FindOptionsOg, WithId } from 'mongodb'
+import { Document, FindOptions, WithId } from 'mongodb'
 
-export type SortParams<T extends Document> = {
-  skip?: number | undefined
-  filter?: Filter<T>
-  order: number
-  param: string
-  limit: number
+export type ProjectionPick<T> = {
+  projection: { [K in keyof WithId<T>]?: 1 | true }
+}
+export type ProjectionOmit<T> = {
+  projection: { [K in keyof WithId<T>]?: 0 | false }
 }
 
-export type ExactlyOne<T, K = keyof T> = K extends keyof T
-  ? { [key in K]: T[K] }
-  : never
+export type Projection<T> = {
+  projection: ProjectionPick<T>['projection'] | ProjectionOmit<T>['projection']
+}
 
-type ProjectionPick<T> = { projection: { [K in keyof WithId<T>]?: 1 } }
-type ProjectionOmit<T> = { projection: { [K in keyof WithId<T>]?: 0 } }
-
-export type FindOptions<T extends Document> =
-  | (
-      | FindOptionsOg<T>
-      | (FindOptionsOg<T> & (ProjectionPick<T> | ProjectionOmit<T>))
-    )
-  | undefined
-
-export type FindOptionsReturn<
+export type WithProjectionRes<
   T extends Document,
-  F extends FindOptions<T>
-> = F extends ProjectionPick<T>
-  ? Pick<T, keyof F['projection']>
-  : F extends ProjectionOmit<T>
-  ? Omit<T, keyof F['projection']>
+  F extends FindOptions<T> & Projection<T>
+> = F['projection'] extends undefined | Record<string, never>
+  ? WithId<T>
+  : F['projection'] extends ProjectionPick<T>['projection']
+  ? Pick<WithId<T>, keyof F['projection']>
+  : F['projection'] extends ProjectionOmit<T>['projection']
+  ? Omit<WithId<T>, keyof F['projection']>
   : WithId<T>
