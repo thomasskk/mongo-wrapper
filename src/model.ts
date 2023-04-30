@@ -24,27 +24,31 @@ import {
 
 import { Projection, WithProjectionRes } from './types.js'
 
-export const model = <T extends Document>({
-  collection,
-  collectionName,
-}: {
+export const modelFactory = <T extends Document>(params: {
   collection: Collection<T>
   collectionName: string
 }) => {
+  const s = { collection: params.collection }
   return {
-    collectionName,
-    findOne<F extends FindOptions<T> & Projection<T>>(
+    set collection(coll: Collection<T>) {
+      s.collection = coll
+    },
+    get collection(): Collection<T> {
+      return s.collection
+    },
+    collectionName: params.collectionName,
+    async findOne<F extends FindOptions<T> & Projection<T>>(
       filter: Filter<T>,
       options?: F
     ): Promise<WithProjectionRes<T, F> | null> {
-      return collection.findOne(filter, options)
+      return s.collection.findOne(filter, options)
     },
 
     async exists(
       filter: Filter<T>,
       options?: FindOptions<T>
     ): Promise<boolean> {
-      const result = await collection.findOne(filter, options)
+      const result = await s.collection.findOne(filter, options)
       return !!result
     },
 
@@ -53,14 +57,14 @@ export const model = <T extends Document>({
       update: UpdateFilter<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return collection.findOneAndUpdate(filter, update, options ?? {})
+      return s.collection.findOneAndUpdate(filter, update, options ?? {})
     },
 
     insertOne(
       doc: OptionalUnlessRequiredId<T>,
       options?: InsertOneOptions
     ): Promise<InsertOneResult<T>> {
-      return collection.insertOne(doc, options ?? {})
+      return s.collection.insertOne(doc, options ?? {})
     },
 
     findOneAndReplace(
@@ -68,21 +72,21 @@ export const model = <T extends Document>({
       replacement: WithoutId<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return collection.findOneAndReplace(filter, replacement, options ?? {})
+      return s.collection.findOneAndReplace(filter, replacement, options ?? {})
     },
 
     findOneAndDelete(
       filter: Filter<T>,
       options?: FindOneAndUpdateOptions
     ): Promise<ModifyResult<T>> {
-      return collection.findOneAndDelete(filter, options ?? {})
+      return s.collection.findOneAndDelete(filter, options ?? {})
     },
 
     find<F extends FindOptions<T> & Projection<T>>(
       filter: Filter<T>,
       options?: F
     ): FindCursor<WithProjectionRes<T, F>> {
-      return collection.find(filter, options)
+      return s.collection.find(filter, options)
     },
 
     updateOne(
@@ -90,7 +94,7 @@ export const model = <T extends Document>({
       update: UpdateFilter<T>,
       options?: UpdateOptions
     ): Promise<UpdateResult> {
-      return collection.updateOne(filter, update, options ?? {})
+      return s.collection.updateOne(filter, update, options ?? {})
     },
 
     updateMany(
@@ -98,32 +102,32 @@ export const model = <T extends Document>({
       update: UpdateFilter<T>,
       options?: UpdateOptions
     ): Promise<Document | UpdateResult> {
-      return collection.updateMany(filter, update, options ?? {})
+      return s.collection.updateMany(filter, update, options ?? {})
     },
 
     deleteOne(
       filter: Filter<T>,
       options?: DeleteOptions
     ): Promise<DeleteResult> {
-      return collection.deleteOne(filter, options ?? {})
+      return s.collection.deleteOne(filter, options ?? {})
     },
 
     deleteMany(
       filter: Filter<T>,
       options?: DeleteOptions
     ): Promise<DeleteResult> {
-      return collection.deleteMany(filter, options ?? {})
+      return s.collection.deleteMany(filter, options ?? {})
     },
 
     count(filter: Filter<T>, options?: CountDocumentsOptions): Promise<number> {
-      return collection.countDocuments(filter, options ?? {})
+      return s.collection.countDocuments(filter, options ?? {})
     },
 
     aggregate(
       pipeline?: { [key: string]: any }[],
       options?: AggregateOptions
     ): AggregationCursor<T> {
-      return collection.aggregate(pipeline, options)
+      return s.collection.aggregate(pipeline, options)
     },
 
     insertMany(
@@ -131,10 +135,10 @@ export const model = <T extends Document>({
       options?: BulkWriteOptions
     ): Promise<InsertManyResult<T>> {
       return options
-        ? collection.insertMany(docs, options)
-        : collection.insertMany(docs)
+        ? s.collection.insertMany(docs, options)
+        : s.collection.insertMany(docs)
     },
   }
 }
 
-export type Model<T extends Document> = ReturnType<typeof model<T>>
+export type Model<T extends Document = any> = ReturnType<typeof modelFactory<T>>

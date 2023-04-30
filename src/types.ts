@@ -1,4 +1,11 @@
-import { Document, FindOptions, WithId } from 'mongodb'
+import {
+  Document,
+  Filter,
+  FindOptions,
+  ObjectId,
+  OptionalUnlessRequiredId,
+  WithId,
+} from 'mongodb'
 
 export type ProjectionPick<T> = {
   projection: { [K in keyof WithId<T>]?: 1 | true }
